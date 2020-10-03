@@ -132,10 +132,18 @@ var stringifyJSON = function(obj) {
         return resultStr.join('');
       }
 
+      let innerArrayTest = obj.filter(x => Array.isArray(x));
+      if (innerArrayTest.length > 0) {
+        let resultStr = '[';
+        let sI = 0;
+        let result = nestedArrFunc (obj, resultStr);
+        return result;
+      }
+
+
 
       for (let z = 0; z < obj.length; z++) {
         if (obj[z].constructor === Object) {
-
           let result = coolerFunc(obj[z]) + ',';
           resultStr = resultStr.concat(result);
         }
@@ -198,6 +206,50 @@ let coolFunc = function (obj, counter) {
   obj.unshift();
   counter++;
   return coolFunc(obj[0], counter);
+};
+
+let nestedArrFunc = function (obj, resultStr, cI, lI) {
+  for (let i = 0; i < obj.length; i++) {
+    if (Array.isArray(obj[i])) {
+      resultStr = resultStr.split('');
+
+      if (cI === undefined && lI === undefined) {
+        resultStr.splice(i + 1, 0, '[');
+        saveLength = resultStr.length;
+      } else if (lI > - 1 && cI === undefined) {
+        resultStr.splice(i + 1 + lI, 0, '[');
+        saveLength = resultStr.length - lI;
+      } else if (cI && lI) {
+        resultStr.splice(cI, 0, '[');
+        saveLength = resultStr.length - cI - lI;
+      }
+
+      let index = 0;
+      //-2 because I don't need the last comma.
+      while (index < obj[i].length - 1) {
+        resultStr.push(',');
+        index++;
+      }
+
+      resultStr.splice(saveLength + obj[i].length, 0, ']');
+
+      let countdownIndex = obj[i].length - 1;
+      while (countdownIndex > -1) {
+        if (Array.isArray(obj[i][countdownIndex])) {
+          return nestedArrFunc(obj[i], resultStr.join(''), saveLength + countdownIndex, index);
+        }
+
+        resultStr.splice(saveLength + countdownIndex + 1, 0, obj[i][countdownIndex]);
+        countdownIndex--;
+      }
+      //Implicit Return :D
+      resultStr.push(']');
+      return resultStr.join('');
+    } else {
+      resultStr += (obj[i]) + ',';
+      lI = 1;
+    }
+  }
 };
 
 let coolerFunc = function (obj) {

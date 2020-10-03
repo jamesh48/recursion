@@ -3,7 +3,6 @@
 
 // but you're not, so you'll write it from scratch:
 var parseJSON = function(json) {
-  alert('test: ' + JSON.parse(json));
   const arrBracket = new RegExp(/\[/g).test(json);
   const objBracket = new RegExp(/\{/g).test(json);
   const emptyArr = new RegExp(/\[]/g).test(json);
@@ -56,7 +55,17 @@ const handleObjX = function (json, obj) {
   let openBracketIndex = json.indexOf('{');
   let colonIndex = json.indexOf(':');
   let commaIndex = json.indexOf(',');
-  let closeBracketIndex = json.indexOf('}');
+  let closeBracketIndex = json.lastIndexOf('}');
+
+  let nestedObj = json.slice(openBracketIndex + 1, closeBracketIndex);
+  let nestedObjTest = nestedObj.indexOf('}') > -1;
+  if (nestedObjTest) {
+    let key = nestedObj.slice(0, colonIndex - 1);
+    key = key.join('').replace(/\"/g, '');
+    nestedObj = nestedObj.slice(colonIndex, closeBracketIndex);
+    obj[key] = handleNestedObj(nestedObj, -1, -1, {});
+    return obj;
+  }
 
   if (commaIndex === -1) {
     let property = json.splice(openBracketIndex + 1, closeBracketIndex - 1);
@@ -168,6 +177,52 @@ const nullBooleanNumberTest = function (item) {
     return shiftPop(item);
   }
 };
+
+const handleNestedObj = function (nestedObj, startingIndex, colonIndex, obj) {
+  let closingBracketIndex = nestedObj.lastIndexOf('}');
+
+  //First Pass;
+  if (startingIndex === -1) {
+    colonIndex = nestedObj.indexOf(':');
+    startingIndex = nestedObj.indexOf('{');
+  }
+
+  //Handling the Key
+  let key = nestedObj.slice(startingIndex + 1, colonIndex);
+  let keysColon = key.indexOf(':');
+  key.splice(keysColon, 1);
+  key = key.join('').replace(/\"/g, '');
+
+  let colonIndexTest = nestedObj.slice(colonIndex + 1).indexOf(':');
+  if (colonIndexTest === -1) {
+
+    let innerMostBracket = nestedObj.slice(colonIndex + 1).indexOf('}') + colonIndex + 1;
+    let value = nestedObj.slice(colonIndex + 1, innerMostBracket).join('');
+
+    obj[key] = nullBooleanNumberTest(value);
+    return nullBooleanNumberTest(obj);
+  } else {
+    //Setting up for next iteration;
+    startingIndex = nestedObj.slice(startingIndex + 1).indexOf('{') + startingIndex + 1;
+    colonIndex = nestedObj.slice(colonIndex + 1).indexOf(':') + colonIndex + 1;
+    //????
+    obj[key] = handleNestedObj(nestedObj, startingIndex, colonIndex, obj);
+    return obj;
+  }
+};
+
+// const handleNestedObjValue = function (value) {
+//   let obj = {};
+//   let firstBracketIndex = value.indexOf('{') + 1;
+//   let secondBracketIndex = value.slice(firstBracketIndex).indexOf('}');
+//   let colonIndex = value.indexOf(':');
+//   let key = value.slice(firstBracketIndex + 1, colonIndex);
+//   key = key.join('').replace(/\"/g, '');
+//   let nestedValue = value.slice(colonIndex + 1, value.indexOf('}'));
+//   nestedValue = nestedValue.join('').replace(/\"/g, '');
+//   obj[key] = nestedValue;
+//   return nullBooleanNumberTest(obj);
+// };
 
 //ref: https://stackoverflow.com/questions/20817618/is-there-a-splice-method-for-strings
 const spliceSlice = function (str, index, count, add) {
